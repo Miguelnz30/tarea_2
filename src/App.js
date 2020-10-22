@@ -22,14 +22,9 @@ const api=axios.create({
           'Access-Control-Allow-Headers': 'X-Requested-With, content-type',  
   }
 })
-/*const data = [
-  { id:1 , nombre: "nombre", apellido: "apellido",email: "example@p.com" },
-  
-];*/
-
 class App extends React.Component {
   state = {
-    //data: data,
+   
     modalActualizar: false,
     modalInsertar: false,
     busqueda:'',
@@ -51,16 +46,6 @@ class App extends React.Component {
     await this.setState({busqueda:e.target.value});
     this.filtrar();
   }
-  /*componentDidMount(){
-    this.setState({usuario:data});
-  }
-  filtrar=()=>{
-    var search=data.filter(item=>{
-      if(item.nombre.includes(this.state.busqueda)){
-        return item;
-      }
-    })
-  }*/
   
   mostrarModalActualizar = (dato) => {
     this.setState({
@@ -82,6 +67,7 @@ class App extends React.Component {
   cerrarModalInsertar = () => {
     this.setState({ modalInsertar: false });
   };
+  
   getUser=async()=>{
     let data= await api.get('/usuarios').then(({data})=>data);
       this.setState({usuarios:data})
