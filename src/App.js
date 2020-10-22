@@ -1,8 +1,7 @@
 import React from "react";
-import logo from "./logo.svg";
 import "./App.css";
 import "bootstrap/dist/css/bootstrap.min.css";
-import $ from 'jquery';
+import axios from "axios";
 import {
   Table,
   Button,
@@ -13,34 +12,46 @@ import {
   FormGroup,
   ModalFooter,
 } from "reactstrap";
-
-const data = [
+const api=axios.create({
+  baseURL:'http://localhost:3050',
+  withCredentials: true,
+  mode:'no-cors',
+  headers: {
+          'Access-Control-Allow-Origin' : 'http://localhost:3000',
+          'Access-Control-Allow-Methods':'GET,PUT,POST,DELETE,PATCH,OPTIONS',
+          'Access-Control-Allow-Headers': 'X-Requested-With, content-type',  
+  }
+})
+/*const data = [
   { id:1 , nombre: "nombre", apellido: "apellido",email: "example@p.com" },
   
-];
+];*/
 
 class App extends React.Component {
   state = {
-    data: data,
+    //data: data,
     modalActualizar: false,
     modalInsertar: false,
     busqueda:'',
-    usuario:[],
-	fadeIn:false,
-	message:'',
+    usuarios:[],
     form: {
-      id: "",
+      cedula:"",
       nombre: "",
       apellido: "",
-	  email: "",
+	    correo: "",
     },
   };
+  constructor(){
+    super();
+    this.getUser();
+  }
+  
   onchange=async e=>{
     e.persist();
     await this.setState({busqueda:e.target.value});
     this.filtrar();
   }
-  componentDidMount(){
+  /*componentDidMount(){
     this.setState({usuario:data});
   }
   filtrar=()=>{
@@ -49,9 +60,8 @@ class App extends React.Component {
         return item;
       }
     })
-  }
+  }*/
   
-
   mostrarModalActualizar = (dato) => {
     this.setState({
       form: dato,
@@ -72,59 +82,38 @@ class App extends React.Component {
   cerrarModalInsertar = () => {
     this.setState({ modalInsertar: false });
   };
-
-  editar = (dato) => {
-    var contador = 0;
-    var arreglo = this.state.data;
-    arreglo.map((registro) => {
-      if (dato.id == registro.id) {
-        arreglo[contador].nombre = dato.nombre;
-        arreglo[contador].apellido= dato.apellido;
-		arreglo[contador].email= dato.email;
-      }
-      contador++;
-    });
-    this.setState({ data: arreglo, modalActualizar: false });
-  };
-
-  eliminar = (dato) => {
-    var opcion = window.confirm("Estás Seguro que deseas Eliminar el elemento "+dato.id);
-    if (opcion == true) {
-      var contador = 0;
-      var arreglo = this.state.data;
-      arreglo.map((registro) => {
-        if (dato.id == registro.id) {
-          arreglo.splice(contador, 1);
-        }
-        contador++;
-      });
-      this.setState({ data: arreglo, modalActualizar: false });
+  getUser=async()=>{
+    let data= await api.get('/usuarios').then(({data})=>data);
+      this.setState({usuarios:data})
     }
-  };
-
-  insertar= ()=>{
-	  
-    var valorNuevo= {...this.state.form};
-    valorNuevo.id=this.state.data.length+1;
-    var lista= this.state.data;
-    lista.push(valorNuevo);
+  createUser=async()=>{
+    var lista= this.state.usuarios;
+    let res= await api.post('/add',{...this.state.form})
     this.setState({ modalInsertar: false, data: lista });
-	this.message('agregado');
-	  
+    console.log(res)
+      this.getUser();
+      }
+  updateUser=async(cedula,val)=>{
+    var arreglo = this.state.usuarios;
+    val={...this.state.form};
+    let data=await api.put(`/update/${cedula}`,{
+      cedula:val,
+      nombre:val,
+      apellido:val,
+      correo:val
+})
+    this.setState({ data: arreglo, modalActualizar: false });
+    console.log(data)
+    this.getUser();
   }
-  message=(message)=>{
-	  this.setState({
-		  fadeIn:true,
-		  message:message
-	  });
-	  setTimeout(()=>{
-		  this.setState({
-		   fadeIn:false,
-		  message:''
-		  })
-	  },3000);
-  }
+  deleteUser= async(cedula)=>{
+      var arreglo = this.state.usuarios;
+      let data =await api.delete(`/delete/${cedula}`);
+      this.setState({ data: arreglo, modalActualizar: false });
+      console.log(data)
+        this.getUser();
 
+    }
   handleChange = (e) => {
     this.setState({
       form: {
@@ -145,17 +134,8 @@ class App extends React.Component {
 		  
           <br />
           <br />
-          <div className="barraBusqueda">
-      <input
-      type="text"
-      placeholder="busqueda"
-      className="textField"
-      value={this.state.busqueda}
-      onChange={this.onchange}
-      />
-      <button type="button" className="btnBuscar" /*onClick={onclear}*/ ></button>
-      </div>
-          <Table data={data} id="dtBasicExample" className="table table-striped table-bordered table-sm" cellspacing="0" width="100%">
+      
+          <Table  className="table table-striped table-bordered table-sm"  width="100%">
            
             <thead>
               <tr>
@@ -168,12 +148,12 @@ class App extends React.Component {
             </thead>
 
             <tbody>
-              {this.state.data.map((dato) => (
-                <tr key={dato.id}>
-                  <td>{dato.id}</td>
+              {this.state.usuarios.map((dato) => (
+                <tr key={dato.cedula}>
+                  <td>{dato.cedula}</td>
                   <td>{dato.nombre}</td>
                   <td>{dato.apellido}</td>
-				  <td>{dato.email}</td>
+				          <td>{dato.correo}</td>
                   <td>
                     <Button
                       color="primary"
@@ -181,7 +161,7 @@ class App extends React.Component {
                     >
                       Editar
                     </Button>{" "}
-                    <Button color="danger" onClick={()=> this.eliminar(dato)}>Eliminar</Button>
+                    <Button color="danger" onClick={()=> this.deleteUser(dato.cedula)}>Eliminar</Button>
                   </td>
                 </tr>
               ))}
@@ -205,7 +185,7 @@ class App extends React.Component {
                 className="form-control"
                 readOnly
                 type="text"
-                value={this.state.form.id}
+                value={this.state.form.cedula}
               />
             </FormGroup>
             
@@ -241,10 +221,10 @@ class App extends React.Component {
               </label>
               <input
                 className="form-control"
-                name="email"
+                name="correo"
                 type="email"
                 onChange={this.handleChange}
-                value={this.state.form.email}
+                value={this.state.form.correo}
               />
             </FormGroup>
           </ModalBody>
@@ -252,7 +232,7 @@ class App extends React.Component {
           <ModalFooter>
             <Button
               color="primary"
-              onClick={() => this.editar(this.state.form)}
+              onClick={() => this.updateUser(this.state.form)}
             >
               Editar
             </Button>
@@ -273,6 +253,18 @@ class App extends React.Component {
           </ModalHeader>
 
           <ModalBody>
+          <FormGroup>
+              <label>
+                cedula: 
+              </label>
+              <input
+                className="form-control"
+                name="cedula"
+                type="text"
+                onChange={this.handleChange}
+                value={this.state.form.cedula}
+              />
+            </FormGroup>
             
             <FormGroup>
               <label>
@@ -305,10 +297,10 @@ class App extends React.Component {
               </label>
               <input
                 className="form-control"
-                name="email"
+                name="correo"
                 type="email"
                 onChange={this.handleChange}
-                value={this.state.form.email}
+                value={this.state.form.correo}
               />
             </FormGroup>
           </ModalBody>
@@ -316,7 +308,7 @@ class App extends React.Component {
           <ModalFooter>
             <Button
               color="primary"
-              onClick={() => this.insertar()}
+              onClick={() => this.createUser()}
             >
               Insertar
             </Button>
